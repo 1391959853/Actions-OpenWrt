@@ -15,21 +15,6 @@ name: OpenWrt Builder
 on:
   repository_dispatch:
   workflow_dispatch:
-    # 新增SSH连接输入参数
-    inputs:
-      ssh:
-        description: '启用SSH连接（用于调试）'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
-      ssh_timeout:
-        description: 'SSH连接超时（分钟）'
-        required: false
-        default: '60'
-        type: string
 
 env:
   REPO_URL: https://github.com/fanchmwrt/fanchmwrt
@@ -41,6 +26,8 @@ env:
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
+  ENABLE_SSH: true          # 新增：是否启用 SSH 调试（true/false）
+  SSH_TIMEOUT: 60            # 新增：SSH 超时时间（分钟）
   TZ: Asia/Shanghai
 
 jobs:
@@ -102,13 +89,13 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-    # 新增SSH连接步骤（仅在手动触发且启用ssh时执行）
+    # SSH 连接步骤（根据环境变量 ENABLE_SSH 决定是否启用）
     - name: Setup SSH session
       uses: mxschmitt/action-tmate@v3
-      if: ${{ github.event_name == 'workflow_dispatch' && inputs.ssh == 'true' }}
+      if: env.ENABLE_SSH == 'true'
       with:
         limit-access-to-actor: true
-        timeout-minutes: ${{ inputs.ssh_timeout || '60' }}
+        timeout-minutes: ${{ env.SSH_TIMEOUT }}
 
     - name: Compile the firmware
       id: compile
